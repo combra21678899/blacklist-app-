@@ -1,0 +1,76 @@
+name: Tests y Cobertura
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: blacklist_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v3
+      
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Instalar Poetry
+        run: |
+          pip install poetry
+      
+      - name: Configurar Poetry
+        run: |
+          poetry config virtualenvs.create false
+      
+      - name: Instalar dependencias
+        run: |
+          poetry install --with dev
+      
+      - name: Configurar variables de entorno
+        run: |
+          echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/blacklist_db" >> $GITHUB_ENV
+          echo "BEARER_TOKEN=test-token-12345" >> $GITHUB_ENV
+      
+      - name: Ejecutar pruebas con cobertura
+        run: |
+          pytest tests/ --cov=src --cov-report=term-missing --cov-report=xml
+      
+      - name: Verificar cobertura (mínimo 90%)
+        run: |
+          COVERAGE=$(python -c "import xml.etree.ElementTree as ET; tree=ET.parse('coverage.xml'); root=tree.getroot(); print(root.attrib['line-rate'])")
+          COVERAGE_PCT=$(python -c "print(round(float('$COVERAGE')*100, 2))")
+          echo "Cobertura: $COVERAGE_PCT%"
+          if (( $(echo "$COVERAGE_PCT < 90" | bc -l) )); then
+            echo "❌ Cobertura $COVERAGE_PCT% es menor que 90%"
+            exit 1
+          else
+            echo "✅ Cobertura $COVERAGE_PCT% - ¡Mínimo alcanzado!"
+          fi
+      
+      - name: Subir reporte de cobertura
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
