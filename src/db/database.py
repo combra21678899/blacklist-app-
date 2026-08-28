@@ -1,5 +1,9 @@
 import os
 from flask_sqlalchemy import SQLAlchemy
+from dotenv import load_dotenv
+
+# Cargar variables de entorno desde .env
+load_dotenv()
 
 # Initialize SQLAlchemy
 db = SQLAlchemy()
@@ -11,7 +15,10 @@ def init_db(app):
     # Get database URL from environment variables
     database_url = os.environ.get("DATABASE_URL")
     if not database_url:
-        raise ValueError("DATABASE_URL environment variable must be set")
+        # Si no está configurada, usar SQLite por defecto para desarrollo
+        database_url = "sqlite:///blacklist.db"
+        print("⚠️  DATABASE_URL no configurada. Usando SQLite por defecto.")
+        os.environ["DATABASE_URL"] = database_url
     
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -27,4 +34,4 @@ def create_tables(app):
     """
     with app.app_context():
         db.create_all()
-
+        print("✅ Tablas creadas correctamente")
