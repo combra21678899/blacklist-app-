@@ -12,6 +12,8 @@ services:
       - .env
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/blacklist_db
+    volumes:
+      - ./tests:/app/tests   # <--- Agrega esta línea
 
   db:
     image: postgres:14
@@ -21,5 +23,6 @@ services:
       POSTGRES_DB: blacklist_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
 volumes:
   postgres_data:

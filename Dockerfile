@@ -19,7 +19,7 @@ COPY pyproject.toml poetry.lock* ./
 RUN poetry config virtualenvs.create false
 
 # Instalamos las dependencias que necesitamos, sin instalar el proyecto actual
-RUN poetry install --only main --no-root
+RUN poetry install --with dev --no-root
 
 # Creamos un nuevo stage con el alias runner
 FROM python:3.11-slim AS runner
@@ -37,6 +37,7 @@ COPY --from=base /usr/local/bin /usr/local/bin
 # Copiamos el código de la aplicación
 COPY --from=base /app /app
 COPY ./src /app/src
+COPY ./tests /app/tests
 
 # Crea el usuario y el grupo noroot
 RUN groupadd -r noroot && useradd -r -g noroot noroot
@@ -52,4 +53,3 @@ EXPOSE 8080
 
 # Command to run the application
 CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8080", "src.main:app"]
-
