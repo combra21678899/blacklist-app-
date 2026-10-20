@@ -40,7 +40,7 @@ COPY ./src /app/src
 COPY ./tests /app/tests
 
 # Crea el usuario y el grupo noroot
-RUN groupadd -r noroot && useradd -r -g noroot noroot
+RUN groupadd -r -g 10001 noroot && useradd -r -u 10001 -g noroot noroot
 
 # Le damos la propiedad de la carpeta /app al usuario noroot
 RUN chown -R noroot:noroot /app
@@ -52,4 +52,4 @@ USER noroot
 EXPOSE 8080
 
 # Command to run the application
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8080", "src.main:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "4", "--preload", "src.main:app"]
